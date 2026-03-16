@@ -1,4 +1,12 @@
-import streamlit as st
+# =========================================
+# 1. Mount Google Drive
+# =========================================
+from google.colab import drive
+drive.mount('/content/drive')
+
+# =========================================
+# 2. Import Libraries
+# =========================================
 import os
 import cv2
 import numpy as np
@@ -16,15 +24,14 @@ import tensorflow as tf
 from tensorflow.keras import layers, models
 from tensorflow.keras.utils import to_categorical
 
-# Title
-st.title("Bacterial Colony Classification using Machine Learning and Deep Learning")
+# =========================================
+# 3. Dataset Path
+# =========================================
+dataset_path = "/content/drive/MyDrive/bacterial colony dataset"
 
-st.write("This app compares multiple algorithms for bacterial colony image classification.")
-
-# Dataset path (folder inside GitHub repo)
-dataset_path = "bacterial colony dataset"
-
-# Selected bacteria classes
+# =========================================
+# 4. Selected Classes (5 classes from 31)
+# =========================================
 selected_classes = [
 "Escherichia.coli",
 "Staphylococcus.aureus",
@@ -33,14 +40,13 @@ selected_classes = [
 "Enterococcus.faecalis"
 ]
 
-# Image size
-img_size = 128
-
-# Load dataset
+# =========================================
+# 5. Load Images
+# =========================================
 images = []
 labels = []
 
-st.write("Loading dataset...")
+img_size = 128
 
 for class_name in selected_classes:
 
@@ -63,49 +69,69 @@ for class_name in selected_classes:
 X = np.array(images)
 y = np.array(labels)
 
-st.write("Dataset Shape:",X.shape)
+print("Dataset Shape:",X.shape)
 
-# Encode labels
+# =========================================
+# 6. Encode Labels
+# =========================================
 le = LabelEncoder()
 y_encoded = le.fit_transform(y)
 
 num_classes = len(np.unique(y_encoded))
 
-# Train test split
+# =========================================
+# 7. Train Test Split
+# =========================================
 X_train,X_test,y_train,y_test = train_test_split(
 X,y_encoded,test_size=0.2,random_state=42
 )
 
-# Flatten for ML models
+# =========================================
+# 8. Flatten Data for ML Models
+# =========================================
 X_train_flat = X_train.reshape(X_train.shape[0],-1)
 X_test_flat = X_test.reshape(X_test.shape[0],-1)
 
-st.write("Training Machine Learning Models...")
-
-# Naive Bayes
+# =========================================
+# 9. Naive Bayes
+# =========================================
 nb = GaussianNB()
 nb.fit(X_train_flat,y_train)
 
 nb_pred = nb.predict(X_test_flat)
+
 bayes_acc = accuracy_score(y_test,nb_pred)
 
-# SVM
+print("Naive Bayes Accuracy:",bayes_acc)
+
+# =========================================
+# 10. SVM
+# =========================================
 svm = SVC()
 svm.fit(X_train_flat,y_train)
 
 svm_pred = svm.predict(X_test_flat)
+
 svm_acc = accuracy_score(y_test,svm_pred)
 
-# Decision Tree
+print("SVM Accuracy:",svm_acc)
+
+# =========================================
+# 11. Decision Tree
+# =========================================
 dt = DecisionTreeClassifier(max_depth=3)
+
 dt.fit(X_train_flat,y_train)
 
 dt_pred = dt.predict(X_test_flat)
+
 dt_acc = accuracy_score(y_test,dt_pred)
 
-st.write("Training CNN Model...")
+print("Decision Tree Accuracy:",dt_acc)
 
-# CNN Model
+# =========================================
+# 12. CNN Model
+# =========================================
 y_train_cat = to_categorical(y_train,num_classes)
 y_test_cat = to_categorical(y_test,num_classes)
 
@@ -136,8 +162,7 @@ cnn.fit(
 X_train,y_train_cat,
 epochs=10,
 batch_size=16,
-validation_data=(X_test,y_test_cat),
-verbose=0
+validation_data=(X_test,y_test_cat)
 )
 
 cnn_pred = cnn.predict(X_test)
@@ -145,9 +170,11 @@ cnn_pred = np.argmax(cnn_pred,axis=1)
 
 cnn_acc = accuracy_score(y_test,cnn_pred)
 
-st.write("Training Vision Transformer Model...")
+print("CNN Accuracy:",cnn_acc)
 
-# Simple Vision Transformer (light version)
+# =========================================
+# 13. Simple Vision Transformer
+# =========================================
 inputs = layers.Input(shape=(img_size,img_size,3))
 
 x = layers.Rescaling(1./255)(inputs)
@@ -172,16 +199,20 @@ vit_model.fit(
 X_train,y_train,
 epochs=10,
 batch_size=16,
-validation_data=(X_test,y_test),
-verbose=0
+validation_data=(X_test,y_test)
 )
 
 vit_pred = vit_model.predict(X_test)
+
 vit_pred = np.argmax(vit_pred,axis=1)
 
 vit_acc = accuracy_score(y_test,vit_pred)
 
-# Results
+print("Vision Transformer Accuracy:",vit_acc)
+
+# =========================================
+# 14. Model Accuracy Comparison
+# =========================================
 results = pd.DataFrame({
 
 "Algorithm":[
@@ -202,20 +233,21 @@ vit_acc
 
 })
 
-st.subheader("Model Accuracy Comparison")
+print("\nMODEL ACCURACY COMPARISON\n")
 
-st.dataframe(results)
+print(results)
 
-# Graph
-st.subheader("Accuracy Graph")
+# =========================================
+# 15. Accuracy Graph
+# =========================================
+plt.figure(figsize=(8,5))
 
-fig, ax = plt.subplots()
+plt.bar(results["Algorithm"],results["Accuracy"])
 
-ax.bar(results["Algorithm"],results["Accuracy"])
+plt.title("Model Accuracy Comparison")
 
-ax.set_ylabel("Accuracy")
-ax.set_title("Algorithm Accuracy Comparison")
+plt.ylabel("Accuracy")
 
 plt.xticks(rotation=25)
 
-st.pyplot(fig)
+plt.show()
