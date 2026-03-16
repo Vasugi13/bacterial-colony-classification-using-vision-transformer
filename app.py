@@ -17,45 +17,58 @@ from sklearn.tree import DecisionTreeClassifier
 st.title("Bacterial Colony Classification")
 
 # -----------------------------
-# Download Dataset from Drive
+# Download and Extract Dataset
 # -----------------------------
 url = "https://drive.google.com/uc?id=1CrYCeMSiuol01NKgDZ5KBVJgFdQKppvi"
-output = "dataset.zip"
+zip_path = "dataset.zip"
 dataset_path = "dataset"
 
 if not os.path.exists(dataset_path):
     with st.spinner("Downloading Dataset..."):
-        gdown.download(url, output, quiet=False)
-        # Use Python's zipfile module instead of os.system
-        with zipfile.ZipFile(output, 'r') as zip_ref:
+        gdown.download(url, zip_path, quiet=False)
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(dataset_path)
+
+# -----------------------------
+# Detect actual image folder
+# -----------------------------
+# Sometimes the zip contains a nested 'dataset' folder
+nested_folder = os.path.join(dataset_path, "dataset")
+if os.path.exists(nested_folder):
+    dataset_path_actual = nested_folder
+else:
+    dataset_path_actual = dataset_path
+
+st.write(f"Using dataset folder: {dataset_path_actual}")
 
 # -----------------------------
 # Load Dataset
 # -----------------------------
 images = []
 labels = []
-
 img_size = 64
 
-for folder in os.listdir(dataset_path):
-    class_path = os.path.join(dataset_path, folder)
+for folder in os.listdir(dataset_path_actual):
+    class_path = os.path.join(dataset_path_actual, folder)
     if not os.path.isdir(class_path):
         continue
-
     for img_name in os.listdir(class_path):
         img_path = os.path.join(class_path, img_name)
-        image = cv2.imread(img_path)
-        if image is None:
+        img = cv2.imread(img_path)
+        if img is None:
             continue
-        # Resize and convert to grayscale
-        image = cv2.resize(image, (img_size, img_size))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        images.append(image)
+        img = cv2.resize(img, (img_size, img_size))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Grayscale
+        images.append(img)
         labels.append(folder)
 
-X = np.array(images, dtype=np.float32) / 255.0  # normalize
+if len(images) == 0:
+    st.error("No images found in the dataset folder! Check extraction.")
+    st.stop()
+
+X = np.array(images, dtype=np.float32) / 255.0
 y = np.array(labels)
+st.success(f"Loaded {len(X)} images from dataset.")
 
 # -----------------------------
 # Encode Labels
@@ -64,13 +77,13 @@ le = LabelEncoder()
 y_encoded = le.fit_transform(y)
 
 # -----------------------------
-# Train Test Split
+# Train-Test Split
 # -----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
     X, y_encoded, test_size=0.2, random_state=42
 )
 
-# Flatten images for classical ML
+# Flatten for classical ML
 X_train_flat = X_train.reshape(X_train.shape[0], -1)
 X_test_flat = X_test.reshape(X_test.shape[0], -1)
 
@@ -107,7 +120,7 @@ st.dataframe(results)
 fig, ax = plt.subplots()
 ax.bar(results["Algorithm"], results["Accuracy"])
 ax.set_ylabel("Accuracy")
-ax.set_ylim(0,1)
+ax.set_ylim(0, 1)
 ax.set_title("Model Accuracy Comparison")
 st.pyplot(fig)
 
@@ -117,7 +130,6 @@ st.pyplot(fig)
 st.subheader("Upload Colony Image for Prediction")
 
 model_choice = st.selectbox("Select Model", ["Naive Bayes", "SVM", "Decision Tree"])
-
 uploaded_file = st.file_uploader("Choose an image")
 
 if uploaded_file is not None:
@@ -127,7 +139,7 @@ if uploaded_file is not None:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image_flat = image.reshape(1, -1) / 255.0
 
-    # Choose model
+    # Predict using selected model
     if model_choice == "Naive Bayes":
         prediction = nb.predict(image_flat)
     elif model_choice == "SVM":
@@ -136,6 +148,5 @@ if uploaded_file is not None:
         prediction = dt.predict(image_flat)
 
     label = le.inverse_transform(prediction)
-
     st.image(image, caption="Uploaded Image", use_column_width=True)
     st.success(f"Predicted Colony Type ({model_choice}): {label[0]}")
