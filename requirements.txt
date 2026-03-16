@@ -1,6 +1,7 @@
+streamlit
 numpy
 pandas
 matplotlib
-opencv-python
+opencv-python-headless
 scikit-learn
-tensorflow
+tensorflow==2.15.0
