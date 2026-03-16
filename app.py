@@ -30,15 +30,23 @@ if not os.path.exists(dataset_path):
             zip_ref.extractall(dataset_path)
 
 # -----------------------------
-# Detect actual image folder
+# Automatically find actual dataset folder
 # -----------------------------
-# Sometimes the zip contains a nested 'dataset' folder
-nested_folder = os.path.join(dataset_path, "dataset")
-if os.path.exists(nested_folder):
-    dataset_path_actual = nested_folder
-else:
-    dataset_path_actual = dataset_path
+def find_image_root(path):
+    """
+    Walk through the extracted zip and find the folder containing class subfolders
+    with at least one image file.
+    """
+    for root, dirs, files in os.walk(path):
+        if dirs:
+            for d in dirs:
+                subfolder_path = os.path.join(root, d)
+                for f in os.listdir(subfolder_path):
+                    if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+                        return root
+    return path
 
+dataset_path_actual = find_image_root(dataset_path)
 st.write(f"Using dataset folder: {dataset_path_actual}")
 
 # -----------------------------
@@ -54,16 +62,18 @@ for folder in os.listdir(dataset_path_actual):
         continue
     for img_name in os.listdir(class_path):
         img_path = os.path.join(class_path, img_name)
+        if not img_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+            continue
         img = cv2.imread(img_path)
         if img is None:
             continue
         img = cv2.resize(img, (img_size, img_size))
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Grayscale
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         images.append(img)
         labels.append(folder)
 
 if len(images) == 0:
-    st.error("No images found in the dataset folder! Check extraction.")
+    st.error("No images found in the dataset folder!")
     st.stop()
 
 X = np.array(images, dtype=np.float32) / 255.0
@@ -83,7 +93,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y_encoded, test_size=0.2, random_state=42
 )
 
-# Flatten for classical ML
+# Flatten images for classical ML models
 X_train_flat = X_train.reshape(X_train.shape[0], -1)
 X_test_flat = X_test.reshape(X_test.shape[0], -1)
 
