@@ -1,7 +1,8 @@
-streamlit
-numpy
-opencv-python-headless
-scikit-learn
-tensorflow
+streamlit==1.30.0
+numpy==1.23.5
+opencv-python-headless==4.8.0.74
+scikit-learn==1.3.0
+tensorflow==2.13.0
 joblib
 gdown
+Pillow
