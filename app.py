@@ -13,25 +13,30 @@ st.write("Upload a bacterial colony image to predict the colony type.")
 img_size = 128
 
 # -----------------------------
-# Download Models
+# Download Models (ONLY DL MODELS)
 # -----------------------------
 def download_model(file_id, output):
     if not os.path.exists(output):
         url = f"https://drive.google.com/uc?id={file_id}"
         gdown.download(url, output, quiet=False)
 
-# Download only large models
+# Download only CNN (SAFE)
 download_model("1Xk1VDm3HBW5f9fvgc5JhCqUrs5OXAAt1", "cnn_model.h5")
-download_model("1vDSCeF_O3WpS98Tidpcm71t-1voiozX3", "vit_model.h5")
+
+# ⚠️ ViT is very large → skip or keep optional
+# download_model("1vDSCeF_O3WpS98Tidpcm71t-1voiozX3", "vit_model.h5")
+
 
 # -----------------------------
-# Load Models (SAFE)
+# Load Models (SAFE LOADING)
 # -----------------------------
 @st.cache_resource
 def load_all_models():
-    svm = nb = dt = le = None
 
-    # Load ML models safely
+    svm = nb = dt = le = None
+    cnn = vit = None
+
+    # ---------------- ML MODELS ----------------
     try:
         svm = joblib.load("svm.pkl")
     except:
@@ -52,11 +57,21 @@ def load_all_models():
     except:
         st.error("❌ Label Encoder missing")
 
-    # Load DL models
-    cnn = load_model("cnn_model.h5")
-    vit = load_model("vit_model.h5")
+    # ---------------- DL MODELS ----------------
+    try:
+        cnn = load_model("cnn_model.h5")
+    except:
+        st.error("❌ CNN model failed to load")
+
+    # Optional ViT (skip if not needed)
+    if os.path.exists("vit_model.h5"):
+        try:
+            vit = load_model("vit_model.h5")
+        except:
+            st.warning("⚠️ ViT model failed / too large → skipped")
 
     return svm, nb, dt, cnn, vit, le
+
 
 svm, nb, dt, cnn, vit, le = load_all_models()
 
@@ -103,13 +118,26 @@ if uploaded_file is not None:
             st.write("Decision Tree: ❌ Not Available")
 
         # -----------------------------
-        # DL Predictions
+        # CNN Prediction
         # -----------------------------
-        cnn_pred = le.inverse_transform(np.argmax(cnn.predict(image_dl), axis=1))[0]
-        vit_pred = le.inverse_transform(np.argmax(vit.predict(image_dl), axis=1))[0]
+        if cnn is not None:
+            cnn_pred = le.inverse_transform(
+                np.argmax(cnn.predict(image_dl), axis=1)
+            )[0]
+            st.write("CNN:", cnn_pred)
+        else:
+            st.write("CNN: ❌ Not Available")
 
-        st.write("CNN:", cnn_pred)
-        st.write("Vision Transformer:", vit_pred)
+        # -----------------------------
+        # ViT Prediction (OPTIONAL)
+        # -----------------------------
+        if vit is not None:
+            vit_pred = le.inverse_transform(
+                np.argmax(vit.predict(image_dl), axis=1)
+            )[0]
+            st.write("Vision Transformer:", vit_pred)
+        else:
+            st.write("Vision Transformer: ⚠️ Skipped")
 
     else:
-        st.error("Label encoder not loaded. Cannot decode predictions.")
+        st.error("❌ Label Encoder not loaded → Cannot show predictions")
