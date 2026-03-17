@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 import cv2
 import numpy as np
@@ -9,7 +7,6 @@ import os
 from tensorflow.keras.models import load_model
 
 # ---------------------------
-
 st.title("Bacterial Colony Classification")
 st.write("Upload a bacterial colony image to predict the colony type.")
 
@@ -24,28 +21,36 @@ def download_model(file_id, output):
         gdown.download(url, output, quiet=False)
 
 # -----------------------------
-# Download Large Models
+# Download ALL Models (IMPORTANT)
 # -----------------------------
 download_model("11RSSrvV4cV9HGNRVMU6bQdHThYOImvw7", "svm.pkl")
 download_model("1Xk1VDm3HBW5f9fvgc5JhCqUrs5OXAAt1", "cnn_model.h5")
 download_model("1vDSCeF_O3WpS98Tidpcm71t-1voiozX3", "vit_model.h5")
 
-# -----------------------------
-# Load Models
-# -----------------------------
-svm = joblib.load("svm.pkl")
-nb = joblib.load("naive_bayes.pkl")
-dt = joblib.load("decision_tree.pkl")
 
-cnn = load_model("cnn_model.h5")
-vit = load_model("vit_model.h5")
 
-le = joblib.load("label_encoder.pkl")
+# -----------------------------
+# Load Models (SAFE LOADING)
+# -----------------------------
+@st.cache_resource
+def load_all_models():
+    svm = joblib.load("svm.pkl")
+    nb = joblib.load("naive_bayes.pkl")
+    dt = joblib.load("decision_tree.pkl")
+
+    cnn = load_model("cnn_model.h5")
+    vit = load_model("vit_model.h5")
+
+    le = joblib.load("label_encoder.pkl")
+
+    return svm, nb, dt, cnn, vit, le
+
+svm, nb, dt, cnn, vit, le = load_all_models()
 
 # -----------------------------
 # Image Upload
 # -----------------------------
-uploaded_file = st.file_uploader("Upload Colony Image", type=["jpg","png","jpeg"])
+uploaded_file = st.file_uploader("Upload Colony Image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
 
