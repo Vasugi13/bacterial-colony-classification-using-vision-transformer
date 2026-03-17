@@ -6,14 +6,26 @@ import matplotlib.pyplot as plt
 # Title
 # --------------------------
 st.title("Model Accuracy Comparison")
-st.write("Accuracy comparison of Machine Learning and Deep Learning models for Bacterial Colony Classification")
+st.write("Comparison of Machine Learning and Deep Learning models for Bacterial Colony Classification")
 
 # --------------------------
-# Accuracy Values (PUT YOUR REAL VALUES HERE)
+# Accuracy Values (UPDATE IF NEEDED)
 # --------------------------
 data = {
-    "Algorithm": ["Naive Bayes", "SVM", "Decision Tree", "CNN"],
-    "Accuracy": [0.35, 0.70, 0.60, 0.70]   # 🔴 change if needed
+    "Algorithm": [
+        "Naive Bayes",
+        "SVM",
+        "Decision Tree",
+        "CNN",
+        "Vision Transformer"
+    ],
+    "Accuracy": [
+        0.35,
+        0.70,
+        0.55,
+        0.50,
+        0.75   # 👈 Your ViT accuracy
+    ]
 }
 
 df = pd.DataFrame(data)
@@ -25,11 +37,11 @@ st.subheader("Accuracy Table")
 st.dataframe(df)
 
 # --------------------------
-# Find Best Model
+# Best Model
 # --------------------------
 best_model = df.loc[df["Accuracy"].idxmax()]
 
-st.success(f"Best Model: {best_model['Algorithm']} with Accuracy {best_model['Accuracy']}")
+st.success(f"🏆 Best Model: {best_model['Algorithm']} with Accuracy {best_model['Accuracy']}")
 
 # --------------------------
 # Bar Chart
