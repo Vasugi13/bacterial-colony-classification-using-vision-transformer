@@ -7,3 +7,4 @@ pillow==9.5.0
 tensorflow==2.13.0
 keras==2.13.1
 h5py==3.9.0
+python
