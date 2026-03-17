@@ -7,7 +7,7 @@ import gdown
 from tensorflow.keras.models import load_model
 
 # --------------------------
-# App Title
+# Title
 # --------------------------
 st.title("Bacterial Colony Classification")
 st.write("Upload a bacterial colony image to predict the colony type.")
@@ -15,55 +15,58 @@ st.write("Upload a bacterial colony image to predict the colony type.")
 img_size = 128
 
 # --------------------------
-# Google Drive Download
+# SAFE DOWNLOAD FUNCTION
 # --------------------------
 def download_model(file_id, output):
     if not os.path.exists(output):
-        url = f"https://drive.google.com/uc?id={file_id}"
-        gdown.download(url, output, quiet=False)
+        try:
+            url = f"https://drive.google.com/uc?id={file_id}"
+            gdown.download(url, output, quiet=False, fuzzy=True)
+        except:
+            st.error(f"❌ Failed to download {output}")
 
 # --------------------------
-# Download ONLY REQUIRED MODELS
+# DOWNLOAD MODELS FROM DRIVE
 # --------------------------
+# SVM
 download_model("11RSSrvV4cV9HGNRVMU6bQdHThYOImvw7", "svm.pkl")
+
+# CNN
 download_model("1Xk1VDm3HBW5f9fvgc5JhCqUrs5OXAAt1", "cnn_model.h5")
 
-# ❌ DO NOT LOAD VIT (too large)
-# download_model("1vDSCeF_O3WpS98Tidpcm71t-1voiozX3", "vit_model.h5")
+# ❌ DO NOT USE VIT (too large)
 
 # --------------------------
-# Load Models Safely
+# LOAD MODELS
 # --------------------------
 @st.cache_resource
 def load_models():
     svm = nb = dt = cnn = le = None
 
-    # GitHub models
+    try:
+        svm = joblib.load("svm.pkl")
+    except:
+        st.error("❌ SVM not loaded")
+
     try:
         nb = joblib.load("naive_bayes.pkl")
     except:
-        st.warning("⚠️ Naive Bayes failed")
+        st.error("❌ Naive Bayes not loaded")
 
     try:
         dt = joblib.load("decision_tree.pkl")
     except:
-        st.warning("⚠️ Decision Tree failed")
+        st.error("❌ Decision Tree not loaded")
 
     try:
         le = joblib.load("label_encoder.pkl")
     except:
         st.error("❌ Label Encoder missing")
 
-    # Drive models
-    try:
-        svm = joblib.load("svm.pkl")
-    except:
-        st.warning("⚠️ SVM failed")
-
     try:
         cnn = load_model("cnn_model.h5")
     except:
-        st.error("❌ CNN failed")
+        st.error("❌ CNN not loaded")
 
     return svm, nb, dt, cnn, le
 
@@ -86,35 +89,34 @@ if uploaded_file is not None:
     image_dl = image_resized.reshape(1, img_size, img_size, 3)
 
     st.image(image, caption="Uploaded Image", use_column_width=True)
-
     st.subheader("Prediction Results")
 
     if le:
 
         # NB
-        if nb:
+        try:
             st.write("Naive Bayes:", le.inverse_transform(nb.predict(image_flat))[0])
-        else:
-            st.write("Naive Bayes: ❌")
+        except:
+            st.write("Naive Bayes: ❌ Error")
 
         # SVM
-        if svm:
+        try:
             st.write("SVM:", le.inverse_transform(svm.predict(image_flat))[0])
-        else:
-            st.write("SVM: ❌")
+        except:
+            st.write("SVM: ❌ Error")
 
         # DT
-        if dt:
+        try:
             st.write("Decision Tree:", le.inverse_transform(dt.predict(image_flat))[0])
-        else:
-            st.write("Decision Tree: ❌")
+        except:
+            st.write("Decision Tree: ❌ Error")
 
         # CNN
-        if cnn:
+        try:
             pred = np.argmax(cnn.predict(image_dl), axis=1)
             st.write("CNN:", le.inverse_transform(pred)[0])
-        else:
-            st.write("CNN: ❌")
+        except:
+            st.write("CNN: ❌ Error")
 
     else:
-        st.error("Label encoder missing!")
+        st.error("Label encoder missing")
