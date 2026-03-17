@@ -8,7 +8,7 @@ import gdown
 import os
 from tensorflow.keras.models import load_model
 
-# -----------------------------
+# ---------------------------
 
 st.title("Bacterial Colony Classification")
 st.write("Upload a bacterial colony image to predict the colony type.")
