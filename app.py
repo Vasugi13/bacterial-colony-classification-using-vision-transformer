@@ -1,55 +1,49 @@
 import streamlit as st
 import pandas as pd
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 
 # --------------------------
-# Title
-# --------------------------
-st.title("Model Accuracy Comparison")
-st.write("Comparison of Machine Learning and Deep Learning models for Bacterial Colony Classification")
+st.title("Model Accuracy Comparison (Auto Computed)")
+st.write("Accuracy calculated from dataset predictions")
 
 # --------------------------
-# Accuracy Values (UPDATE IF NEEDED)
+# Load Data
 # --------------------------
-data = {
-    "Algorithm": [
-        "Naive Bayes",
-        "SVM",
-        "Decision Tree",
-        "CNN",
-        "Vision Transformer"
-    ],
-    "Accuracy": [
-        0.35,
-        0.70,
-        0.55,
-        0.50,
-        0.75   # 👈 Your ViT accuracy
-    ]
+df = pd.read_csv("results.csv")
+
+y_true = df["y_true"]
+
+# --------------------------
+# Compute Accuracies
+# --------------------------
+accuracy_data = {
+    "Naive Bayes": accuracy_score(y_true, df["nb"]),
+    "SVM": accuracy_score(y_true, df["svm"]),
+    "Decision Tree": accuracy_score(y_true, df["dt"]),
+    "CNN": accuracy_score(y_true, df["cnn"]),
+    "Vision Transformer": accuracy_score(y_true, df["vit"]),
 }
 
-df = pd.DataFrame(data)
+acc_df = pd.DataFrame(list(accuracy_data.items()), columns=["Algorithm", "Accuracy"])
 
 # --------------------------
-# Show Table
+# Display Table
 # --------------------------
 st.subheader("Accuracy Table")
-st.dataframe(df)
+st.dataframe(acc_df)
 
 # --------------------------
 # Best Model
 # --------------------------
-best_model = df.loc[df["Accuracy"].idxmax()]
-
-st.success(f"🏆 Best Model: {best_model['Algorithm']} with Accuracy {best_model['Accuracy']}")
+best_model = acc_df.loc[acc_df["Accuracy"].idxmax()]
+st.success(f"🏆 Best Model: {best_model['Algorithm']} with Accuracy {best_model['Accuracy']:.2f}")
 
 # --------------------------
 # Bar Chart
 # --------------------------
-st.subheader("Accuracy Comparison Chart")
-
 fig, ax = plt.subplots()
-ax.bar(df["Algorithm"], df["Accuracy"])
+ax.bar(acc_df["Algorithm"], acc_df["Accuracy"])
 ax.set_xlabel("Models")
 ax.set_ylabel("Accuracy")
 ax.set_title("Model Accuracy Comparison")
